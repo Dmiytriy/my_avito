@@ -10,4 +10,6 @@ urlpatterns = [
     path('<int:pk>/upload_image/', AdImageUpload.as_view()),
 
 ]
+
 urlpatterns += router.urls
+

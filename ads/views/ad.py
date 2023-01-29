@@ -1,16 +1,12 @@
-import json
-
-from django.core.paginator import Paginator
-
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, ListView, CreateView, UpdateView, DeleteView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-
+from ads.permissions import IsAdAuthorOrStaff
 from ads.serializers import *
 
 
@@ -25,10 +21,21 @@ class AdViewSet(ModelViewSet):
         'retrieve': AdDetailSerializer,
         'list': AdListSerializer
     }
+
+    default_permission = [AllowAny()]
+    permission_list = {"retrieve": [IsAuthenticated()],
+                       "update": [IsAuthenticated(), IsAdAuthorOrStaff()],
+                       "partial_update": [IsAuthenticated(), IsAdAuthorOrStaff()],
+                       "destroy": [IsAuthenticated(), IsAdAuthorOrStaff()],
+                       }
+
     pagination_class = AdPagination
 
     def get_serializer_class(self):
         return self.serializer_classes.get(self.action, self.default_serializer)
+
+    def get_permissions(self):
+        return self.permission_list.get(self.action, self.default_permission)
 
     def list(self, request, *args, **kwargs):
         categories = request.GET.getlist("cat")
