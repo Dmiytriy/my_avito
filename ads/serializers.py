@@ -2,11 +2,13 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from ads.models import Ad, Category, Selection
+from ads.validators import not_null
 from users.models import User, UserRoles
 from users.serializers import UserListSerializer, UserSerializer, UserLocationSerializer
 
 
 class AdSerializer(serializers.ModelSerializer):
+    is_published = serializers.BooleanField(validators=[not_null], required=False)
     class Meta:
         model = Ad
         fields = '__all__'
@@ -38,11 +40,19 @@ class SelectionSerializer(serializers.ModelSerializer):
 class SelectionCreateSerializer(serializers.ModelSerializer):
     owner = serializers.SlugRelatedField(slug_field="username", queryset=User.objects.all(), required=False)
 
+    # def create(self, validated_data):
+    #     request = self.context.get("request")
+    #     if "owner" not in validated_data:
+    #         validated_data["owner"] = request.user
+    #     elif "owner" in validated_data and request.user.role == UserRoles.MEMBER and request.user != validated_data["owner"]:
+    #         raise ValidationError("Нет доступа")
+    #     return super().create(validated_data)
+
     def create(self, validated_data):
         request = self.context.get("request")
         if "owner" not in validated_data:
             validated_data["owner"] = request.user
-        elif "owner" in validated_data and request.user.role == UserRoles.MEMBER and request.user != validated_data["owner"]:
+        elif "owner" in validated_data and request.user.role not in ["moderator", "admin"]:
             raise ValidationError("Нет доступа")
         return super().create(validated_data)
 
